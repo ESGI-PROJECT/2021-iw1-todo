@@ -1,6 +1,8 @@
 import { html, css } from 'lit';
+import { createTodo, fetchTodos } from './api/todos.js';
 
 import Base from './Base.js';
+import { getTodos, getTodoToCreate, setTodo, setTodos } from './idb.js';
 import checkConnectivity from './network.js'; 
 
 class TaskApp extends Base {
@@ -14,18 +16,63 @@ class TaskApp extends Base {
   }
 
   static get properties() {
-    return {};
+    return {
+      isOnline: {
+        type: Boolean,
+        state: true
+      },
+      todos: {
+        type: Array,
+        state: true
+      }
+    };
   }
 
   constructor() {
     super();
+    this.todos = [];
+    this.isOnline = true;
   }
 
-  firstUpdated() {
+  async firstUpdated() {
     checkConnectivity();
     document.addEventListener('connection-changed', ({ detail: isOnline }) => {
-      console.log({ isOnline });
+      this.isOnline = isOnline;
+      if (this.isOnline) {
+        this.syncData();
+      }
     });
+
+    if (this.isOnline && navigator.onLine) {
+      const todos = await fetchTodos();
+      this.todos = await setTodos(todos);
+    } else {
+      this.todos = await getTodos() || [];
+    }
+  }
+
+  async syncData() {
+    const toCreate = await getTodoToCreate();
+    if (toCreate.length) {
+      for(let todo of toCreate) {
+        todo.synced = 1;
+        const result = await createTodo(todo);
+        if (result === false) {
+          todo.synced = 0;
+        }
+        return this.todos = await setTodo(todo);
+      }
+    }
+  }
+
+  async handleCreate({ detail: todo }) {
+    await setTodo(todo);
+    if (this.isOnline && navigator.onLine) {
+      await createTodo(todo);
+      return this.todos = await getTodos();
+    }
+    todo.synced = 0;
+    this.todos = await setTodo(todo);
   }
 
   render() {
@@ -35,7 +82,10 @@ class TaskApp extends Base {
           <h1 class="text-2xl"><a href="/">Fire Task 🚀</a></h1>
         </header>
         <main>
-          <task-list></task-list>
+          <task-list
+            .todos="${this.todos}"
+            @create-todo="${this.handleCreate}"
+          ></task-list>
         </main>
       </section>
     `;

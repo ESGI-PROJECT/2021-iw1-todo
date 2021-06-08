@@ -1,6 +1,7 @@
-import { html, css } from 'lit-element';
+import { html, css } from 'lit';
 
 import Base from '../Base.js';
+import '../components/task-card.js';
 
 class TaskList extends Base {
 
@@ -30,6 +31,19 @@ class TaskList extends Base {
 
   handleForm(e) {
     e.preventDefault();
+    if (this._todo === '') return console.log('[todo] Value is required !!!');
+    const todo = {
+      id: Date.now(),
+      title: this._todo,
+      synced: 1,
+      updated: 0,
+      done: 0,
+      deleted: 0,
+      date: Date.now()
+    };
+
+    this.dispatchEvent(new CustomEvent('create-todo', { detail: todo }));
+    this._todo = '';
   }
 
   displayTodo() {
@@ -40,8 +54,7 @@ class TaskList extends Base {
         </header>
         <main class="todolist px-4 pb-20">
           <ul>
-            <!-- ${this.todos.map(todo => html`<task-card .todo="${todo}"></task-card>`)} -->
-            ${this.todos.map(todo => html`<li>${todo.title}</li>`)}
+            ${this.todos.map(todo => html`<task-card .todo="${todo}"></task-card>`)}
           </ul>
         </main>
       </div>
