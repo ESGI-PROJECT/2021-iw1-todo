@@ -46,6 +46,14 @@ class TaskList extends Base {
     this._todo = '';
   }
 
+  handleUpdate({ detail }) {
+    this.dispatchEvent(new CustomEvent('update-todo', { detail }));
+  }
+
+  handleDelete({ detail }) {
+    this.dispatchEvent(new CustomEvent('delete-todo', { detail }));
+  }
+
   displayTodo() {
     return html`
       <div>
@@ -54,7 +62,10 @@ class TaskList extends Base {
         </header>
         <main class="todolist px-4 pb-20">
           <ul>
-            ${this.todos.map(todo => html`<task-card .todo="${todo}"></task-card>`)}
+            ${this.todos.map(todo => html`<task-card
+              @update-todo="${this.handleUpdate}"
+              @delete-todo="${this.handleDelete}"
+              .todo="${todo}"></task-card>`)}
           </ul>
         </main>
       </div>
